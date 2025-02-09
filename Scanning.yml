@@ -1,0 +1,47 @@
+name: IaC Security Scan & Deployment
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  security-scan:
+    name: Security Scan for IaC
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Install Checkov
+        run: pip install checkov
+
+      - name: Run Checkov
+        run: checkov -d .
+
+      - name: Install tfsec
+        run: |
+          curl -L "$(curl -s https://api.github.com/repos/aquasecurity/tfsec/releases/latest | grep browser_download_url | grep linux_amd64 | cut -d '"' -f 4)" -o tfsec
+          chmod +x tfsec
+          sudo mv tfsec /usr/local/bin/
+
+      - name: Run tfsec
+        run: tfsec .
+
+      - name: Install TFLint
+        run: |
+          curl -s https://raw.githubusercontent.com/terraform-linters/tflint/master/install_linux.sh | bash
+
+      - name: Run TFLint
+        run: tflint --init && tflint
+
+      - name: Install Terrascan
+        run: |
+          curl -L "$(curl -s https://api.github.com/repos/tenable/terrascan/releases/latest | grep browser_download_url | grep linux_amd64 | cut -d '"' -f 4)" -o terrascan
+          chmod +x terrascan
+          sudo mv terrascan /usr/local/bin/
+
+      - name: Run Terrascan
+        run: terrascan scan -d .
